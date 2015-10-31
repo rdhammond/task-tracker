@@ -1,0 +1,5 @@
+{
+    "port": 8080,
+    "mongoDb": "mongodb://localhost/TaskTracker",
+    "sessionSecret": "areallycooltaskprogram!"
+}

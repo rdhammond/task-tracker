@@ -1,0 +1,43 @@
+{{#extend "stylesheets"}}
+<link rel="stylesheet" href="/css/root.css">
+{{/extend}}
+
+{{#extend "scripts"}}
+<script src="/js/task-box.js"></script>
+<script src="/js/root.js"></script>
+{{/extend}}
+
+<div class="row">
+    <div class="small-12 column">
+        <h1>Task Tracker</h1>
+    </div>
+</div>
+<div class="row one-shots">
+    <div class="small-12 column">
+        {{#with oneShots}}
+        {{> task-box}}
+        {{/with}}
+    </div>
+</div>
+<div class="row">
+    <div class="small-12 medium-4 column dailies">
+        {{#with dailies}}
+        {{> task-box}}
+        {{/with}}
+    </div>
+    <div class="small-12 medium-4 column weeklies">
+        {{#with weeklies}}
+        {{> task-box}}
+        {{/with}}
+    </div>
+    <div class="small-12 medium-4 column monthlies">
+        {{#with monthlies}}
+        {{> task-box}}
+        {{/with}}
+    </div>
+    <div class="small-12 medium-4 column yearlies">
+        {{#with yearlies}}
+        {{> task-box}}
+        {{/with}}
+    </div>
+</div>

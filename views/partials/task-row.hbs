@@ -1,0 +1,16 @@
+<li class="task-row" data-id="{{id}}">
+    <div class="view-panel">
+        <input type="checkbox" class="is-complete"
+            {{#if isComplete}}
+            checked
+            {{/if}}
+        >
+        <label class="name-label">{{name}}</label>
+        {{#if isNotOneShot}}
+        [<a href="#" class="delete" title="Delete">X</a>]
+        {{/if}}
+    </div>
+    <div class="edit-panel" style="display: none;">
+        <input type="text" class="name-input" placeholder="Task Name">
+    </div>
+</li>
