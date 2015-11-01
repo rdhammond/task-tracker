@@ -43,7 +43,8 @@ return function(context, type) {
                 .siblings('.edit-panel')
                 .show()
                 .children('.name-input')
-                .val($this.text());
+                .val($this.text())
+                .focus();
         },
 
         endEdit: function() {
@@ -63,7 +64,7 @@ return function(context, type) {
                     .siblings('.view-panel')
                     .show()
                     .children('.name-label')
-                    .text($(this).val());
+                    .text($this.val());
             });
         },
 
@@ -105,8 +106,9 @@ return function(context, type) {
                 .hide()
                 .siblings('.edit-panel')
                 .show()
-                .children('.name-input')
-                .val('');
+                .children('.add-input')
+                .val('')
+                .focus();
         },
 
         endAdd: function() {
