@@ -1,7 +1,8 @@
 .muted {
-    color: #6F6F6F;
+    color: silver;
 }
 
 .task-box input:checked + label {
     text-decoration: line-through;
+    color: silver;
 }
