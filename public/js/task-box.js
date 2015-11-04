@@ -43,7 +43,7 @@ return function(context, type) {
                 .siblings('.edit-panel')
                 .show()
                 .children('.name-input')
-                .val($this.text())
+                .val($this.text().trim())
                 .focus();
         },
 

@@ -6,3 +6,15 @@
     text-decoration: line-through;
     color: silver;
 }
+
+.task-box .task-row {
+    margin-bottom: 0.5rem;
+}
+
+.task-box .task-row .is-complete {
+    margin-bottom: 0;
+}
+
+.task-box .task-row .name-label {
+    display: inline;
+}
