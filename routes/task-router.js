@@ -5,6 +5,18 @@ module.exports = function(Task) {
     var router = express.Router();
     router.use(bodyParser.json());
 
+    router.get('/', function(req, res, next) {
+        Task.find({}, function(err, tasks) {
+            if (err) return next(err);
+
+            var viewModels = tasks.map(function(task) {
+                return task.toViewModel();
+            });
+
+            res.status(200).render('task-list-wrapper', {tasks: viewModels});
+        });
+    });
+
     router.post('/', function(req, res, next) {
         var taskData = Task.fromViewModel(req.body);
         if (taskData._id) delete taskData._id;

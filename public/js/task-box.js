@@ -2,6 +2,9 @@ window.TaskBox = (function($) {
 return function(context, type) {
     'use strict';
 
+    var TIMEOUT_SEC = 60;
+    var timer = null;
+
     function submitTask(type, action, data, callback) {
         var url = '/tasks/' + type;
 
@@ -18,8 +21,27 @@ return function(context, type) {
         });
     }
 
+    function enableRefresh() {
+        if (timer) return;
+
+        timer = window.setTimeout(function() {
+            timer = null;
+            taskBox.refreshList();
+        
+        },TIMEOUT_SEC*1000);
+    }
+
+    function disableRefresh() {
+        if (!timer) return;
+
+        window.clearTimeout(timer);
+        timer = null;
+    }
+
     var taskBox = {
         completeTask: function(e) {
+            disableRefresh();
+
             var $taskRow = $(this).closest('.task-row');
 
             var data = {
@@ -32,10 +54,13 @@ return function(context, type) {
             submitTask(type, action, data, function() {
                 if (action === 'DELETE')
                     $taskRow.remove();
+
+                enableRefresh();
             });
         },
 
         beginEdit: function() {
+            disableRefresh();
             var $this = $(this);
 
             $this.parents('.view-panel')
@@ -65,6 +90,8 @@ return function(context, type) {
                     .show()
                     .children('.name-label')
                     .text($this.val());
+
+                enableRefresh();
             });
         },
 
@@ -73,6 +100,8 @@ return function(context, type) {
                 .hide()
                 .siblings('.view-panel')
                 .show();
+
+            enableRefresh();
         },
 
         editKeypress: function(e) {
@@ -91,15 +120,20 @@ return function(context, type) {
         },
 
         deleteTask: function() {
+            disableRefresh();
+
             var $taskRow = $(this).parents('.task-row');
             var data = {id: $taskRow.data('id')};
 
             submitTask(type, 'DELETE', data, function() {
                 $taskRow.remove();
+                enableRefresh();
             });
         },
 
         beginAdd: function() {
+            disableRefresh();
+
             var $this = $(this);
 
             $this.parents('.view-panel')
@@ -135,6 +169,8 @@ return function(context, type) {
                 .hide()
                 .siblings('.view-panel')
                 .show();
+
+            enableRefresh();
         },
 
         addKeypress: function(e) {
@@ -150,6 +186,13 @@ return function(context, type) {
                     $(this).blur();
                     break;
             }
+        },
+
+        refreshList: function() {
+            submitTask(type, 'GET', {}, function(html) {
+                $('.task-list', context).html(html);
+                enableRefresh();
+            });
         }
     };
 
@@ -164,6 +207,8 @@ return function(context, type) {
         $context.on('click', '.add-label', taskBox.beginAdd);
         $context.on('blur', '.add-input', taskBox.endAdd);
         $context.on('keyup', '.add-input', taskBox.addKeypress);
+
+        enableRefresh();
     });
 };
 })(jQuery);
