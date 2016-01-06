@@ -1,25 +1,12 @@
-window.TaskBox = (function($) {
+window.TaskBox = (function($, TaskRouter) {
 return function(context, type) {
     'use strict';
 
     var TIMEOUT_SEC = 60;
-    var timer = null;
+    var MAX_UNDOS = 10;
 
-    function submitTask(type, action, data, callback) {
-        var url = '/tasks/' + type;
-
-        if (data.id)
-            url += '/' + data.id;
-
-        $.ajax({
-            url: url,
-            type: action,
-            dataType: 'html',
-            data: JSON.stringify(data),
-            contentType: 'application/json; charset=utf-8',
-            success: callback
-        });
-    }
+    var timer = null,
+        taskRouter = new TaskRouter(type);
 
     function enableRefresh() {
         if (timer) return;
@@ -42,17 +29,19 @@ return function(context, type) {
         completeTask: function(e) {
             disableRefresh();
 
-            var $taskRow = $(this).closest('.task-row');
+            var $this = $(this),
+                $taskRow = $this.closest('.task-row'),
+                id = $taskRow.data('id'),
+                isComplete = $this.prop('checked');
 
-            var data = {
-                id: $taskRow.data('id'),
-                isComplete: $(this).prop('checked')
-            };
+            var action = type === 'one-shot'
+                ? taskRouter.remove.bind(taskRouter, id)
+                : isComplete
+                    ? taskRouter.check.bind(taskRouter, id)
+                    : taskRouter.uncheck.bind(taskRouter, id);
 
-            var action = type === 'one-shot' ? 'DELETE' : 'PUT';
-
-            submitTask(type, action, data, function() {
-                if (action === 'DELETE')
+            action(function() {
+                if (type === 'one-shot')
                     $taskRow.remove();
 
                 enableRefresh();
@@ -78,18 +67,17 @@ return function(context, type) {
             if (!$this.val())
                 return taskBox.cancelEdit.call(this);
 
-            var data = {
-                id: $this.closest('.task-row').data('id'),
-                name: $this.val()
-            };
+            var $taskRow = $this.closest('.task-row'),
+                id = $taskRow.data('id'),
+                name = $this.val();
 
-            submitTask(type, 'PUT', data, function() {
+            taskRouter.edit(id, name, function() {
                 $this.parents('.edit-panel')
                     .hide()
                     .siblings('.view-panel')
                     .show()
                     .children('.name-label')
-                    .text($this.val());
+                    .text(name);
 
                 enableRefresh();
             });
@@ -122,10 +110,10 @@ return function(context, type) {
         deleteTask: function() {
             disableRefresh();
 
-            var $taskRow = $(this).parents('.task-row');
-            var data = {id: $taskRow.data('id')};
+            var $taskRow = $(this).parents('.task-row'),
+                id = $taskRow.data('id');
 
-            submitTask(type, 'DELETE', data, function() {
+            taskRouter.remove(id, function() {
                 $taskRow.remove();
                 enableRefresh();
             });
@@ -151,13 +139,8 @@ return function(context, type) {
             if (!$this.val())
                 return taskBox.hideAdd.call(this);
 
-            var data = {
-                name: $this.val(),
-                isComplete: false
-            };
-
-            submitTask(type, 'POST', data, function(html) {
-                $this.closest('.add-task-row')
+            taskRouter.add($this.val(), function(html) {
+                var $newRow = $this.closest('.add-task-row')
                     .before($(html));
 
                 taskBox.hideAdd.call($this[0]);
@@ -189,7 +172,7 @@ return function(context, type) {
         },
 
         refreshList: function() {
-            submitTask(type, 'GET', {}, function(html) {
+            taskRouter.refresh(function(html) {
                 $('.task-list', context).html(html);
                 enableRefresh();
             });
@@ -211,4 +194,4 @@ return function(context, type) {
         enableRefresh();
     });
 };
-})(jQuery);
+})(jQuery, TaskRouter);
