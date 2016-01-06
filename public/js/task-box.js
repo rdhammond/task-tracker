@@ -1,4 +1,4 @@
-window.TaskBox = (function($, TaskRouter) {
+window.TaskBox = (function($, TaskRouter, taskBoxView, window) {
 return function(context, type) {
     'use strict';
 
@@ -11,7 +11,7 @@ return function(context, type) {
     function enableRefresh() {
         if (timer) return;
 
-        timer = window.setTimeout(function() {
+        timer = setTimeout(function() {
             timer = null;
             taskBox.refreshList();
         
@@ -26,39 +26,43 @@ return function(context, type) {
     }
 
     var taskBox = {
-        completeTask: function(e) {
-            disableRefresh();
-
+        checkTask: function() {
             var $this = $(this),
-                $taskRow = $this.closest('.task-row'),
-                id = $taskRow.data('id'),
-                isComplete = $this.prop('checked');
+                id = $this.closest('.task-row').data('id');
 
-            var action = type === 'one-shot'
-                ? taskRouter.remove.bind(taskRouter, id)
-                : isComplete
-                    ? taskRouter.check.bind(taskRouter, id)
-                    : taskRouter.uncheck.bind(taskRouter, id);
-
-            action(function() {
-                if (type === 'one-shot')
-                    $taskRow.remove();
-
+            taskRouter.check(id, function() {
+                taskBoxView.checkTask($this);
                 enableRefresh();
             });
         },
 
+        uncheckTask: function(id) {
+            var $this = $(this),
+                id = $this.closest('.task-row').data('id');
+
+            taskRouter.uncheck(id, function() {
+                taskBoxView.uncheckTask($this);
+                enableRefresh();
+            });
+        },
+
+        completeTask: function(e) {
+            disableRefresh();
+            
+            var $this = $(this),
+                isComplete = $this.prop('checked');
+
+            if (type === 'one-shot')
+                taskBox.deleteTask.call(this);
+            else if (isComplete)
+                taskBox.checkTask.call(this);
+            else
+                taskBox.uncheckTask.call(this);
+        },
+
         beginEdit: function() {
             disableRefresh();
-            var $this = $(this);
-
-            $this.parents('.view-panel')
-                .hide()
-                .siblings('.edit-panel')
-                .show()
-                .children('.name-input')
-                .val($this.text().trim())
-                .focus();
+            taskBoxView.showEdit($(this));
         },
 
         endEdit: function() {
@@ -67,28 +71,18 @@ return function(context, type) {
             if (!$this.val())
                 return taskBox.cancelEdit.call(this);
 
-            var $taskRow = $this.closest('.task-row'),
-                id = $taskRow.data('id'),
+            var id = $this.closest('.task-row').data('id'),
                 name = $this.val();
 
             taskRouter.edit(id, name, function() {
-                $this.parents('.edit-panel')
-                    .hide()
-                    .siblings('.view-panel')
-                    .show()
-                    .children('.name-label')
-                    .text(name);
-
+                taskBoxView.editTask($this, name);
+                taskBoxView.hideEdit($this);
                 enableRefresh();
             });
         },
 
         cancelEdit: function() {
-            $(this).parents('.edit-panel')
-                .hide()
-                .siblings('.view-panel')
-                .show();
-
+            taskBoxView.hideEdit($(this));
             enableRefresh();
         },
 
@@ -101,8 +95,7 @@ return function(context, type) {
 
                 case 27:
                     e.preventDefault();
-                    $(this).val('');
-                    $(this).blur();
+                    $(this).val('').blur();
                     break;
             }
         },
@@ -110,50 +103,36 @@ return function(context, type) {
         deleteTask: function() {
             disableRefresh();
 
-            var $taskRow = $(this).parents('.task-row'),
-                id = $taskRow.data('id');
+            var $this = $(this),
+                id = $this.closest('.task-row').data('id');
 
             taskRouter.remove(id, function() {
-                $taskRow.remove();
+                taskBoxView.removeTask($this);
                 enableRefresh();
             });
         },
 
         beginAdd: function() {
             disableRefresh();
-
+            
             var $this = $(this);
-
-            $this.parents('.view-panel')
-                .hide()
-                .siblings('.edit-panel')
-                .show()
-                .children('.add-input')
-                .val('')
-                .focus();
+            taskBoxView.showAdd($this);
         },
 
         endAdd: function() {
             var $this = $(this);
 
-            if (!$this.val())
-                return taskBox.hideAdd.call(this);
+            if (!$this.val()) {
+                taskBoxView.hideAdd($this);
+                enableRefresh();
+                return;
+            }
 
             taskRouter.add($this.val(), function(html) {
-                var $newRow = $this.closest('.add-task-row')
-                    .before($(html));
-
-                taskBox.hideAdd.call($this[0]);
+                taskBoxView.addTask($this, html);
+                taskBoxView.hideAdd($this);
+                enableRefresh();
             });
-        },
-
-        hideAdd: function() {
-            $(this).parents('.edit-panel')
-                .hide()
-                .siblings('.view-panel')
-                .show();
-
-            enableRefresh();
         },
 
         addKeypress: function(e) {
@@ -165,15 +144,16 @@ return function(context, type) {
 
                 case 27:
                     e.preventDefault();
-                    $(this).val('');
-                    $(this).blur();
+                    $(this).val('').blur();
                     break;
             }
         },
 
         refreshList: function() {
+            var $this = $(this);
+
             taskRouter.refresh(function(html) {
-                $('.task-list', context).html(html);
+                taskBoxView.refresh($this, html);
                 enableRefresh();
             });
         }
@@ -194,4 +174,4 @@ return function(context, type) {
         enableRefresh();
     });
 };
-})(jQuery, TaskRouter);
+})(jQuery, TaskRouter, taskBoxView, window);
