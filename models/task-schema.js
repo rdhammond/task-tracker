@@ -38,7 +38,7 @@ module.exports = function(durationUnit) {
         if (viewModel.name)
             model.name = viewModel.name;
 
-        if (typeof viewModel.isComplete === 'boolean') {
+        if (!!viewModel.isComplete) {
             model.isComplete = viewModel.isComplete;
 
             if (viewModel.isComplete)
