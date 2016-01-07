@@ -1,11 +1,12 @@
-var express = require('express');
-var exphbs = require('express-handlebars');
-var mongoose = require('mongoose');
-var cookieSession = require('cookie-session');
+var express = require('express'),
+    exphbs = require('express-handlebars'),
+    mongoose = require('mongoose'),
+    cookieSession = require('cookie-session');
 
-var config = require('./config');
-var rootRoute = require('./routes/root');
-var taskRoutes = require('./routes/task-routes');
+var config = require('./config'),
+    rootRoute = require('./routes/root'),
+    taskRoutes = require('./routes/task-routes'),
+    TaskCron = require('./cron/task-cron.js');
 
 var blocks = {};
 
@@ -36,7 +37,6 @@ mongoose.connect(config.mongoDb);
 var app = express();
 app.engine('.hbs', hbs.engine);
 app.set('view engine', '.hbs');
-
 app.set('trust proxy', 1);
 
 app.use(cookieSession({
@@ -53,7 +53,8 @@ app.use('/tasks/monthly', taskRoutes.monthly);
 app.use('/tasks/yearly', taskRoutes.yearly);
 
 var server = app.listen(config.port, function() {
-    var address = server.address().address,
+    var cronJob = new TaskCron(),
+        address = server.address().address,
         port = server.address().port;
 
     console.log('TaskTracker listening at http://' + address + ':' + port);

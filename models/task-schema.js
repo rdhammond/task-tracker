@@ -9,6 +9,16 @@ module.exports = function(durationUnit) {
         completedDate: Date
     });
 
+    schema.statics.resetCompleted = function(now, callback) {
+        var cutoff = moment(now).startOf(durationUnit).toDate();
+
+        this.find({})
+            .where('completedDate').lt(cutoff)
+            .where('isComplete').equals(true)
+            .update({$set: {isComplete: false}})
+            .exec(callback);
+    };
+
     schema.methods.toViewModel = function() {
         var model = {
             id: this._id,
@@ -16,12 +26,6 @@ module.exports = function(durationUnit) {
             isComplete: this.isComplete,
             isNotOneShot: true
         };
-
-        if (this.isComplete && this.completedDate) {
-            model.isComplete = moment(this.completedDate)
-                .add(1, durationUnit)
-                .isAfter(Date.now(), durationUnit);
-        }
 
         return model;
     };
