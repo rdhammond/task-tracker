@@ -1,4 +1,7 @@
-<div class="task-box panel">
+<div class="task-box panel clearfix">
+    {{#if isOneShot}}
+    <a class="undo" href="#" style="display: none;">Undo Last Action</a>
+    {{/if}}
     <h2>{{title}}</h2>
     {{> task-list}}
 </div>

@@ -4,9 +4,10 @@ var step = require('step');
 
 var Tasks = require('../models/tasks');
 
-function toViewModels(title, models) {
+function toViewModels(title, models, isOneShot) {
     return {
         title: title,
+        isOneShot: !!isOneShot,
         tasks: models.map(function(model) {
             return model.toViewModel();
         })
@@ -28,7 +29,7 @@ router.get('/', function(req, res, next) {
 
             var viewModel = {
                 layout: 'main',
-                oneShots: toViewModels('Tasks', oneShots),
+                oneShots: toViewModels('Tasks', oneShots, true),
                 dailies: toViewModels('Daily', dailies),
                 weeklies: toViewModels('Weekly', weeklies),
                 monthlies: toViewModels('Monthly', monthlies),

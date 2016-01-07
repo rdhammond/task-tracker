@@ -1,4 +1,4 @@
-(function(TaskBox) {
+window.root = (function(TaskBox) {
     'use strict';
 
     var root = {
@@ -8,5 +8,7 @@
         monthlies: new TaskBox('.monthlies', 'monthly'),
         yearlies: new TaskBox('.yearlies', 'yearly')
     };
+
+    return root;
 
 })(TaskBox);

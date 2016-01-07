@@ -1,4 +1,4 @@
-window.TaskBox = (function($, TaskRouter, taskBoxView, window) {
+window.TaskBox = (function($, TaskRouter, UndoQueue, TaskBoxView) {
 return function(context, type) {
     'use strict';
 
@@ -6,16 +6,18 @@ return function(context, type) {
     var MAX_UNDOS = 10;
 
     var timer = null,
-        taskRouter = new TaskRouter(type);
+        taskBoxView = new TaskBoxView(context),
+        taskRouter = new TaskRouter(type),
+        undoQueue = new UndoQueue(context, taskRouter);
 
     function enableRefresh() {
         if (timer) return;
 
-        timer = setTimeout(function() {
+        timer = window.setTimeout(function() {
             timer = null;
             taskBox.refreshList();
         
-        },TIMEOUT_SEC*1000);
+        }, TIMEOUT_SEC*1000);
     }
 
     function disableRefresh() {
@@ -27,31 +29,28 @@ return function(context, type) {
 
     var taskBox = {
         checkTask: function() {
-            var $this = $(this),
-                id = $this.closest('.task-row').data('id');
+            var id = taskBoxView.id(this); // Checkbox
 
             taskRouter.check(id, function() {
-                taskBoxView.checkTask($this);
+                taskBoxView.checkTask(id);
+                undoQueue.queueUncheck(id);
                 enableRefresh();
             });
         },
 
         uncheckTask: function(id) {
-            var $this = $(this),
-                id = $this.closest('.task-row').data('id');
+            var id = taskBoxView.id(this); // Checkbox
 
             taskRouter.uncheck(id, function() {
-                taskBoxView.uncheckTask($this);
+                taskBoxView.uncheckTask(id);
+                undoQueue.queueCheck(id);
                 enableRefresh();
             });
         },
 
-        completeTask: function(e) {
+        completeTask: function(e) { // Checkbox
             disableRefresh();
             
-            var $this = $(this),
-                isComplete = $this.prop('checked');
-
             if (type === 'one-shot')
                 taskBox.deleteTask.call(this);
             else if (isComplete)
@@ -62,31 +61,37 @@ return function(context, type) {
 
         beginEdit: function() {
             disableRefresh();
-            taskBoxView.showEdit($(this));
+
+            var id = taskBoxView.id(this); // Textbox
+            taskBoxView.showEdit(id);
         },
 
         endEdit: function() {
-            var $this = $(this);
+            var $this = $(this); // Textbox
 
             if (!$this.val())
                 return taskBox.cancelEdit.call(this);
 
-            var id = $this.closest('.task-row').data('id'),
-                name = $this.val();
+            var id = taskBoxView.id(this),
+                oldName = taskBoxView.taskNameById(id),
+                newName = $this.val();
 
-            taskRouter.edit(id, name, function() {
-                taskBoxView.editTask($this, name);
-                taskBoxView.hideEdit($this);
+            taskRouter.edit(id, newName, function() {
+                taskBoxView.editTask(id, newName);
+                taskBoxView.hideEdit();
+                undoQueue.queueEdit(id, oldName);
                 enableRefresh();
             });
         },
 
         cancelEdit: function() {
-            taskBoxView.hideEdit($(this));
+            var id = taskBoxView.id(this); // Textbox
+            taskBoxView.hideEdit(id);
             enableRefresh();
         },
 
         editKeypress: function(e) {
+            // Textbox
             switch (e.which) {
                 case 13:
                     e.preventDefault();
@@ -103,39 +108,46 @@ return function(context, type) {
         deleteTask: function() {
             disableRefresh();
 
-            var $this = $(this),
-                id = $this.closest('.task-row').data('id');
+            var id = taskBoxView.id(this), // button
+                name = taskBoxView.taskNameById(id);
 
             taskRouter.remove(id, function() {
-                taskBoxView.removeTask($this);
+                taskBoxView.removeTask(id);
+                undoQueue.queueAdd(name);
                 enableRefresh();
             });
         },
 
         beginAdd: function() {
             disableRefresh();
-            
-            var $this = $(this);
-            taskBoxView.showAdd($this);
+            taskBoxView.showAdd();
         },
 
         endAdd: function() {
+            // Textbox
             var $this = $(this);
 
             if (!$this.val()) {
-                taskBoxView.hideAdd($this);
+                taskBoxView.hideAdd();
                 enableRefresh();
                 return;
             }
 
-            taskRouter.add($this.val(), function(html) {
-                taskBoxView.addTask($this, html);
-                taskBoxView.hideAdd($this);
+            var id = taskBoxView.id(this),
+                newName = $this.val();
+
+            taskRouter.add(newName, function(html) {
+                var $taskRow = taskBoxView.addTask(html),
+                    id = taskBoxView.id($taskRow[0]);
+
+                taskBoxView.hideAdd();
+                undoQueue.queueRemove(id);
                 enableRefresh();
             });
         },
 
         addKeypress: function(e) {
+            // Textbox
             switch (e.which) {
                 case 13:
                     e.preventDefault();
@@ -153,8 +165,34 @@ return function(context, type) {
             var $this = $(this);
 
             taskRouter.refresh(function(html) {
-                taskBoxView.refresh($this, html);
-                enableRefresh();
+                taskBoxView.refresh(html);
+            });
+
+            enableTimeout();
+        },
+
+        undo: function() {
+            undoQueue.undo(function(action, data, result) {
+                if (action === null)
+                    return;
+
+                switch (action) {
+                    case 'add':
+                        taskBoxView.addTask(result);
+                        break;
+                    case 'remove':
+                        taskBoxView.removeTask(data);
+                        break;
+                    case 'edit':
+                        taskBoxView.editTask(data.id, data.name);
+                        break;
+                    case 'check':
+                        taskBoxView.checkTask(data);
+                        break;
+                    case 'uncheck':
+                        taskBoxView.uncheckTask(data);
+                        break;
+                }
             });
         }
     };
@@ -170,8 +208,11 @@ return function(context, type) {
         $context.on('click', '.add-label', taskBox.beginAdd);
         $context.on('blur', '.add-input', taskBox.endAdd);
         $context.on('keyup', '.add-input', taskBox.addKeypress);
+        $context.on('click', '.undo', taskBox.undo);
 
         enableRefresh();
     });
+
+    return taskBox;
 };
-})(jQuery, TaskRouter, taskBoxView, window);
+})(jQuery, TaskRouter, UndoQueue, TaskBoxView);
