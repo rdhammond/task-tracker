@@ -34,7 +34,7 @@ return function(context, type) {
             taskRouter.check(id, function() {
                 taskBoxView.checkTask(id);
                 undoQueue.queueUncheck(id);
-                enableRefresh();
+                //enableRefresh();
             });
         },
 
@@ -44,12 +44,12 @@ return function(context, type) {
             taskRouter.uncheck(id, function() {
                 taskBoxView.uncheckTask(id);
                 undoQueue.queueCheck(id);
-                enableRefresh();
+                //enableRefresh();
             });
         },
 
         completeTask: function(e) { // Checkbox
-            disableRefresh();
+            //disableRefresh();
             
             if (type === 'one-shot')
                 taskBox.deleteTask.call(this);
@@ -60,7 +60,7 @@ return function(context, type) {
         },
 
         beginEdit: function() {
-            disableRefresh();
+            //disableRefresh();
 
             var id = taskBoxView.id(this); // Textbox
             taskBoxView.showEdit(id);
@@ -80,14 +80,14 @@ return function(context, type) {
                 taskBoxView.editTask(id, newName);
                 taskBoxView.hideEdit();
                 undoQueue.queueEdit(id, oldName);
-                enableRefresh();
+                //enableRefresh();
             });
         },
 
         cancelEdit: function() {
             var id = taskBoxView.id(this); // Textbox
             taskBoxView.hideEdit(id);
-            enableRefresh();
+            //enableRefresh();
         },
 
         editKeypress: function(e) {
@@ -106,7 +106,7 @@ return function(context, type) {
         },
 
         deleteTask: function() {
-            disableRefresh();
+            //disableRefresh();
 
             var id = taskBoxView.id(this), // button
                 name = taskBoxView.taskNameById(id);
@@ -114,12 +114,12 @@ return function(context, type) {
             taskRouter.remove(id, function() {
                 taskBoxView.removeTask(id);
                 undoQueue.queueAdd(name);
-                enableRefresh();
+                //enableRefresh();
             });
         },
 
         beginAdd: function() {
-            disableRefresh();
+            //disableRefresh();
             taskBoxView.showAdd();
         },
 
@@ -129,7 +129,7 @@ return function(context, type) {
 
             if (!$this.val()) {
                 taskBoxView.hideAdd();
-                enableRefresh();
+                //enableRefresh();
                 return;
             }
 
@@ -142,7 +142,7 @@ return function(context, type) {
 
                 taskBoxView.hideAdd();
                 undoQueue.queueRemove(id);
-                enableRefresh();
+                //enableRefresh();
             });
         },
 
@@ -210,7 +210,7 @@ return function(context, type) {
         $context.on('keyup', '.add-input', taskBox.addKeypress);
         $context.on('click', '.undo', taskBox.undo);
 
-        enableRefresh();
+        //enableRefresh();
     });
 
     return taskBox;
