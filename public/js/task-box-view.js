@@ -1,4 +1,4 @@
-window.TaskBoxView = (function($) {
+define(['jquery'], function($) {
 return function(context) {
     'use strict';
 
@@ -106,4 +106,4 @@ return function(context) {
     return taskBoxView;
 
 };
-})(jQuery);
+});

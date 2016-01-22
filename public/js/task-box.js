@@ -1,4 +1,5 @@
-window.TaskBox = (function($, TaskRouter, UndoQueue, TaskBoxView) {
+define(['jquery', 'task-router', 'undo-queue', 'task-box-view'],
+function($, TaskRouter, UndoQueue, TaskBoxView) {
 return function(context, type) {
     'use strict';
 
@@ -215,4 +216,4 @@ return function(context, type) {
 
     return taskBox;
 };
-})(jQuery, TaskRouter, UndoQueue, TaskBoxView);
+});

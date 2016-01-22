@@ -1,4 +1,4 @@
-window.TaskRouter = (function($) {
+define(['jquery'], function($) {
 return function(type) {
     'use strict';
 
@@ -65,4 +65,4 @@ return function(type) {
     };
 
 };
-})(jQuery);
+});

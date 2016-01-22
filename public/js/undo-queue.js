@@ -1,4 +1,4 @@
-window.UndoQueue = (function($) {
+define(['jquery'], function($) {
 return function(context, taskRouter) {
     'use strict';
 
@@ -61,4 +61,4 @@ return function(context, taskRouter) {
 
     return undoQueue;
 };
-})(jQuery);
+});
