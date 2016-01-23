@@ -1,5 +1,6 @@
-.muted {
+.muted, *[disabled] {
     color: silver;
+    text-decoration: none;
 }
 
 .task-box input:checked + label {

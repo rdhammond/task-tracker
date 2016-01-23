@@ -38,10 +38,14 @@ return function(context, type) {
 
     var taskBox = {
         checkTask: function() {
-            var id = taskBoxView.id(this),  // checkbox
+            var $this = $(this),
+                id = taskBoxView.id(this),  // checkbox
                 name = taskBoxView.taskNameById(id);
 
+            $this.prop('disabled', true);
+
             taskRouter.check(id, function() {
+                $this.prop('disabled', false);
                 taskBoxView.checkTask(id);
                 undoQueue.push('check', name);
                 //enableRefresh();
@@ -49,10 +53,14 @@ return function(context, type) {
         },
 
         uncheckTask: function(id) {
-            var id = taskBoxView.id(this),
+            var $this = $(this),
+                id = taskBoxView.id(this),
                 name = taskBoxView.taskNameById(id); // Checkbox
 
+            $this.prop('disabled', true);
+
             taskRouter.uncheck(id, function() {
+                $this.prop('disabled', false);
                 taskBoxView.uncheckTask(id);
                 undoQueue.push('uncheck', name);
                 //enableRefresh();
@@ -87,7 +95,10 @@ return function(context, type) {
                 oldName = taskBoxView.taskNameById(id),
                 newName = $this.val();
 
+            $this.prop('disabled', true);
+
             taskRouter.edit(id, newName, function() {
+                $this.prop('disabled', false);
                 taskBoxView.editTask(id, newName);
                 taskBoxView.hideEdit(id);
 
@@ -124,10 +135,14 @@ return function(context, type) {
         deleteTask: function() {
             //disableRefresh();
 
-            var id = taskBoxView.id(this), // button
+            var $this = $(this),
+                id = taskBoxView.id(this), // button
                 name = taskBoxView.taskNameById(id);
 
+            $this.prop('disabled', true);
+
             taskRouter.remove(id, function() {
+                $this.prop('disabled', false);
                 taskBoxView.removeTask(id);
                 undoQueue.push('delete', name);
                 //enableRefresh();
@@ -150,8 +165,10 @@ return function(context, type) {
             }
 
             var newName = $this.val();
+            $this.prop('disabled', true);
 
             taskRouter.add(newName, function(html) {
+                $this.prop('disabled', false);
                 var $taskRow = taskBoxView.addTask(html);
                 taskBoxView.hideAdd();
                 undoQueue.push('add', newName);
@@ -190,18 +207,22 @@ return function(context, type) {
             var undo = undoQueue.pop();
             if (!undo) return;
 
+            taskBoxView.enableUndo(false);
+
             switch (undo.action) {
                 case 'add':
                     id = taskBoxView.taskIdByName(undo.data);
                     if (!id) return;
 
                     taskRouter.remove(id, function() {
+                        taskBoxView.enableUndo(true);
                         taskBoxView.removeTask(id);
                     });
                     break;
 
                 case 'delete':
                     taskRouter.add(undo.data, function(html) {
+                        taskBoxView.enableUndo(true);
                         taskBoxView.addTask(html);
                     });
                     break;
@@ -211,6 +232,7 @@ return function(context, type) {
                     if (!id) return;
 
                     taskRouter.edit(id, undo.data.oldName, function() {
+                        taskBoxView.enableUndo(true);
                         taskBoxView.editTask(id, undo.data.oldName);
                     });
                     break;
@@ -220,6 +242,7 @@ return function(context, type) {
                     if (!id || !taskBoxView.isChecked(id)) return;
 
                     taskRouter.uncheck(id, function() {
+                        taskBoxView.enableUndo(true);
                         taskBoxView.uncheckTask(id);
                     });
                     break;
@@ -229,6 +252,7 @@ return function(context, type) {
                     if (!id || taskBoxView.isChecked(id)) return;
 
                     taskRouter.check(id, function() {
+                        taskBoxView.enableUndo(true);
                         taskBoxView.checkTask(id);
                     });
                     break;
@@ -248,6 +272,11 @@ return function(context, type) {
         $context.on('blur', '.add-input', taskBox.endAdd);
         $context.on('keyup', '.add-input', taskBox.addKeypress);
         $context.on('click', '.undo', taskBox.undo);
+
+        $context.on('click', 'a[disabled]', function(e) {
+            e.preventDefault();
+            return false;
+        });
 
         //enableRefresh();
     });

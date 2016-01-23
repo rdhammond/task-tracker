@@ -134,6 +134,12 @@ return function(context) {
                 .taskRowById(id)
                 .find('input[type="checkbox"]')
                 .is(':checked');
+        },
+
+        enableUndo: function(enabled) {
+            $context
+                .find('.undo')
+                .prop('disabled', !enabled);
         }
     };
 
