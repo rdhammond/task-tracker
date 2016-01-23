@@ -4,12 +4,20 @@ return function(context, type) {
     'use strict';
 
     var TIMEOUT_SEC = 60;
-    var MAX_UNDOS = 10;
 
     var timer = null,
         taskBoxView = new TaskBoxView(context),
         taskRouter = new TaskRouter(type),
-        undoQueue = new UndoQueue(context, taskRouter);
+        undoQueue = new UndoQueue();
+
+    undoQueue.subscribePush(function() {
+        taskBoxView.showUndo(true);
+    });
+
+    undoQueue.subscribePop(function(count) {
+        if (count <= 0)
+            taskBoxView.showUndo(false);
+    });
 
     function enableRefresh() {
         if (timer) return;
@@ -30,21 +38,23 @@ return function(context, type) {
 
     var taskBox = {
         checkTask: function() {
-            var id = taskBoxView.id(this); // Checkbox
+            var id = taskBoxView.id(this),  // checkbox
+                name = taskBoxView.taskNameById(id);
 
             taskRouter.check(id, function() {
                 taskBoxView.checkTask(id);
-                undoQueue.queueUncheck(id);
+                undoQueue.push('check', name);
                 //enableRefresh();
             });
         },
 
         uncheckTask: function(id) {
-            var id = taskBoxView.id(this); // Checkbox
+            var id = taskBoxView.id(this),
+                name = taskBoxView.taskNameById(id); // Checkbox
 
             taskRouter.uncheck(id, function() {
                 taskBoxView.uncheckTask(id);
-                undoQueue.queueCheck(id);
+                undoQueue.push('uncheck', name);
                 //enableRefresh();
             });
         },
@@ -54,7 +64,7 @@ return function(context, type) {
             
             if (type === 'one-shot')
                 taskBox.deleteTask.call(this);
-            else if (isComplete)
+            else if ($(this).is(':checked'))
                 taskBox.checkTask.call(this);
             else
                 taskBox.uncheckTask.call(this);
@@ -79,8 +89,13 @@ return function(context, type) {
 
             taskRouter.edit(id, newName, function() {
                 taskBoxView.editTask(id, newName);
-                taskBoxView.hideEdit();
-                undoQueue.queueEdit(id, oldName);
+                taskBoxView.hideEdit(id);
+
+                undoQueue.push('edit', {
+                    oldName: oldName,
+                    newName: newName
+                });
+
                 //enableRefresh();
             });
         },
@@ -114,7 +129,7 @@ return function(context, type) {
 
             taskRouter.remove(id, function() {
                 taskBoxView.removeTask(id);
-                undoQueue.queueAdd(name);
+                undoQueue.push('delete', name);
                 //enableRefresh();
             });
         },
@@ -134,15 +149,12 @@ return function(context, type) {
                 return;
             }
 
-            var id = taskBoxView.id(this),
-                newName = $this.val();
+            var newName = $this.val();
 
             taskRouter.add(newName, function(html) {
-                var $taskRow = taskBoxView.addTask(html),
-                    id = taskBoxView.id($taskRow[0]);
-
+                var $taskRow = taskBoxView.addTask(html);
                 taskBoxView.hideAdd();
-                undoQueue.queueRemove(id);
+                undoQueue.push('add', newName);
                 //enableRefresh();
             });
         },
@@ -173,28 +185,54 @@ return function(context, type) {
         },
 
         undo: function() {
-            undoQueue.undo(function(action, data, result) {
-                if (action === null)
-                    return;
+            var id, $taskRow;
 
-                switch (action) {
-                    case 'add':
-                        taskBoxView.addTask(result);
-                        break;
-                    case 'remove':
-                        taskBoxView.removeTask(data);
-                        break;
-                    case 'edit':
-                        taskBoxView.editTask(data.id, data.name);
-                        break;
-                    case 'check':
-                        taskBoxView.checkTask(data);
-                        break;
-                    case 'uncheck':
-                        taskBoxView.uncheckTask(data);
-                        break;
-                }
-            });
+            var undo = undoQueue.pop();
+            if (!undo) return;
+
+            switch (undo.action) {
+                case 'add':
+                    id = taskBoxView.taskIdByName(undo.data);
+                    if (!id) return;
+
+                    taskRouter.remove(id, function() {
+                        taskBoxView.removeTask(id);
+                    });
+                    break;
+
+                case 'delete':
+                    taskRouter.add(undo.data, function(html) {
+                        taskBoxView.addTask(html);
+                    });
+                    break;
+
+                case 'edit':
+                    id = taskBoxView.taskIdByName(undo.data.newName);
+                    if (!id) return;
+
+                    taskRouter.edit(id, undo.data.oldName, function() {
+                        taskBoxView.editTask(id, undo.data.oldName);
+                    });
+                    break;
+
+                case 'check':
+                    id = taskBoxView.taskIdByName(undo.data);
+                    if (!id || !taskBoxView.isChecked(id)) return;
+
+                    taskRouter.uncheck(id, function() {
+                        taskBoxView.uncheckTask(id);
+                    });
+                    break;
+
+                case 'uncheck':
+                    id = taskBoxView.taskIdByName(undo.data);
+                    if (!id || taskBoxView.isChecked(id)) return;
+
+                    taskRouter.check(id, function() {
+                        taskBoxView.checkTask(id);
+                    });
+                    break;
+            }
         }
     };
 

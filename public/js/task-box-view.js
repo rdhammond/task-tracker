@@ -19,7 +19,7 @@ return function(context) {
         uncheckTask: function(id) {
             taskBoxView
                 .taskRowById(id)
-                .find('input[type="checkbox"')
+                .find('input[type="checkbox"]')
                 .prop('checked', false);
         },
 
@@ -55,14 +55,14 @@ return function(context) {
 
         editTask: function(id, name) {
             taskBoxView
-                .findByTaskId(id)
+                .taskRowById(id)
                 .find('.name-label')
                 .text(name);
         },
 
         hideEdit: function(id) {
             taskBoxView
-                .findByTaskId(id)
+                .taskRowById(id)
                 .find('.edit-panel')
                 .hide()
                 .siblings('.view-panel')
@@ -70,10 +70,10 @@ return function(context) {
         },
 
         showEdit: function(id) {
-            var $taskRow = taskBoxView.findByTaskId(id),
-                oldName = taskBoxView.taskNameById(id);
+            var oldName = taskBoxView.taskNameById(id);
 
-            findByTaskId
+            taskBoxView
+                .taskRowById(id)
                 .find('.view-panel')
                 .hide()
                 .siblings('.edit-panel')
@@ -100,6 +100,40 @@ return function(context) {
                 .taskRowById(id)
                 .find('.view-panel .name-label')
                 .text();
+        },
+
+        taskIdByName: function(name) {
+            return taskBoxView
+                .taskRowByName(name)
+                .data('id');
+        },
+
+        
+        taskRowByName: function(name) {
+            name = name.toLowerCase();
+
+            return $context
+                .find('.task-list .task-row .name-label')
+                .filter(function() {
+                    return $(this).text().trim().toLowerCase() === name;
+                })
+                .closest('.task-row');
+        },
+
+        showUndo: function(show) {
+            var $undo = $context.find('.undo');
+
+            if (show)
+                $undo.show();
+            else
+                $undo.hide();
+        },
+
+        isChecked: function(id) {
+            return taskBoxView
+                .taskRowById(id)
+                .find('input[type="checkbox"]')
+                .is(':checked');
         }
     };
 

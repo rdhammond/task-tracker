@@ -1,61 +1,42 @@
 define(['jquery'], function($) {
-return function(context, taskRouter) {
+return function() {
     'use strict';
 
     var MAX_QUEUE_SIZE = 10;
 
-    var queue = [];
+    var queue = [],
+        pushSubscribers = [],
+        popSubscribers = [];
 
     var undoQueue = {
         push: function(action, data) {
-            var i = MAX_QUEUE_SIZE;
-
-            while (i++ <= queue.length) {
+            while (queue.length > MAX_QUEUE_SIZE) {
                 queue.shift();
             }
 
             queue.push({action: action, data: data});
-            $(context).find('.undo').show();
+
+            for (var index in pushSubscribers) {
+                pushSubscribers[index]();
+            }
         },
 
-        queueAdd: function(name) {
-            undoQueue.push('add', name);
+        pop: function() {
+            var result = queue.pop() || null;
+
+            for (var index in popSubscribers) {
+                popSubscribers[index](queue.length);
+            }
+
+            return result;
         },
 
-        queueRemove: function(id) {
-            undoQueue.push('remove', id);
+        subscribePush(callback) {
+            pushSubscribers.push(callback);
         },
 
-        queueCheck: function(id) {
-            undoQueue.push('check', id);
-        },
-
-        queueUncheck: function(id) {
-            undoQueue.push('uncheck', id);
-        },
-
-        queueEdit: function(id, name) {
-            undoQueue.push('edit', {id: id, name: name});
-        },
-
-        undo: function(callback) {
-            if (queue.length === 0)
-                return callback(null);
-
-            var item = queue.pop(),
-                action = taskRouter[item.action];
-
-            var resultFunc = function(result) {
-                if (queue.length === 0)
-                    $(context).find('.undo').hide();
-
-                callback(item.action, item.data, result);
-            };
-
-            if (item.action === 'edit')
-                action(item.data.id, item.data.name, resultFunc);
-            else
-                action(item.data, resultFunc);
+        subscribePop(callback) {
+            popSubscribers.push(callback);
         }
     };
 
